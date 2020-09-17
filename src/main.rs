@@ -1,17 +1,13 @@
-use structopt::StructOpt;
 use exitfailure::ExitFailure;
+use structopt::StructOpt;
 
-/// Convert time from minutes and seconds to fraction of an hour, or vice versa.
-/// Planned usage: hours $TIME
-#[derive(Debug, StructOpt)]
-struct Cli {
-    /// Time in format hh:mm:ss, hh:mm, or hh,.....
-    time: String,
-}
+use crate::time_converter::convert_time;
+
+mod time_converter;
+mod cli;
 
 fn main() -> Result<(), ExitFailure> {
-
-    let args = Cli::from_args();
-    println!("{:?}", &args.time);
+    let args = cli::Cli::from_args();
+    println!("{}", convert_time(&args.time));
     Ok(())
 }
