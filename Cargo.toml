@@ -9,3 +9,7 @@ edition = "2018"
 [dependencies]
 structopt = "0.3.13"
 exitfailure = "0.5.1"
+exitcode = "1.1.2"
+simple-error = "0.2"
+regex = "1"
+
