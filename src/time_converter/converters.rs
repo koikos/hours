@@ -16,7 +16,6 @@ pub fn hours_to_time(time: f32) -> (u16, u8, u8) {
 
 #[cfg(test)]
 mod tests {
-    // Note this useful idiom: importing names from outer (for mod tests) scope.
     use super::*;
 
     // ********************************************************************* Tests for time_to_hours

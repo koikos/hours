@@ -1,10 +1,14 @@
 use exitfailure::ExitFailure;
+use simple_logger::SimpleLogger;
 use structopt::StructOpt;
 
 mod cli;
 mod time_converter;
 
+
 fn main() -> Result<(), ExitFailure> {
+    SimpleLogger::new();
+    log::warn!("This is an example message.");
     let args = cli::Cli::from_args();
     let result = time_converter::convert_time(&args.time);
 

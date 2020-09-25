@@ -1,11 +1,12 @@
+use regex::Regex;
 use simple_error::SimpleError;
 
 mod converters;
+mod parsers;
 
 pub fn convert_time(time: &String) -> Result<String, SimpleError> {
-    use regex::Regex;
-    let re_hhhmmss = Regex::new(r"^\d*:[0-5]?[0-9]?:[0-5]?[0-9]?$").unwrap();
-    let re_mmmss = Regex::new(r"^\d*:[0-5]?[0-9]?$").unwrap();
+    let re_hhhmmss = Regex::new(r"^(?P<h>\d*):(?P<m>[0-5]?[0-9]?):(?P<s>[0-5]?[0-9]?)$").unwrap();
+    let re_mmmss = Regex::new(r"^(?P<h>\d*):(?P<m>[0-5]?[0-9]?)$").unwrap();
     let re_hhddddd = Regex::new(r"^\d*[,.]?\d*$").unwrap();
 
     let result;
@@ -171,12 +172,12 @@ mod tests_hhhdddd_pattern {
     }
 
     #[test]
-    fn allow_none_separator_and_decimal_part() {
+    fn allow_none_decimal_part() {
         assert_eq!(convert_time(&String::from("1")), Ok(String::from("HHH.DDDDD -> HHH:MM:SS")));
     }
 
     #[test]
-    fn allow_separatore_and_none_decimal_part() {
+    fn allow_none_decimal_part_after_separator() {
         assert_eq!(convert_time(&String::from("1.")), Ok(String::from("HHH.DDDDD -> HHH:MM:SS")));
     }
 
@@ -185,3 +186,7 @@ mod tests_hhhdddd_pattern {
         assert_eq!(convert_time(&String::from(".1000")), Ok(String::from("HHH.DDDDD -> HHH:MM:SS")));
     }
 }
+
+
+// Todo: change to Time class, with methodes .as_decimal_string and .as_time_string
+// Todo: in case comma (,) separator, change it to dot (.) before sending it to f32 parser
