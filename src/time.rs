@@ -3,6 +3,7 @@ use std::fmt;
 use regex::Regex;
 use simple_error::SimpleError;
 
+type Decimal = f64;
 
 #[derive(Debug, Eq, PartialEq)]
 pub(crate) struct Time {
@@ -33,21 +34,19 @@ impl Time {
         };
     }
 
-    pub fn from_decimal(time: f32) -> Time {
-        //todo: is there a standard way to convert to f32? should it be named :from_f32 / :from_f64?
-        let hours = f32::floor(time);
-        let mut remainder = time - hours;
-        let minutes = f32::floor((remainder) * 60.0);
-        remainder = remainder - minutes / 60.0;
-        let seconds = f32::floor(remainder * 3600.0);
+    pub fn from_decimal(mut time: Decimal) -> Time {
+        let hours = Decimal::floor(time);
+        time = (time - hours) * 60.0;
+        let minutes = Decimal::round(time);
+        time = (time - minutes) * 60.0;
+        let seconds = Decimal::round(time);
         return Time { hours: hours as u16, minutes: minutes as u8, seconds: seconds as u8 };
-        //todo: is it safe conversions to u16, u8?? Error handling needed?
     }
 
-    pub fn to_decimal(&self) -> f32 {
-        let hours = f32::from(self.hours);
-        let minutes = f32::from(self.minutes);
-        let seconds = f32::from(self.seconds);
+    pub fn to_decimal(&self) -> Decimal {
+        let hours = Decimal::from(self.hours);
+        let minutes = Decimal::from(self.minutes);
+        let seconds = Decimal::from(self.seconds);
         return hours + minutes / 60.0 + seconds / 3600.0;
     }
 
@@ -72,7 +71,7 @@ impl Time {
     }
 
     fn parse_hhhdddd(time: &String) -> Time {
-        let time = time.parse::<f32>().unwrap();
+        let time = time.parse::<Decimal>().unwrap();
         return Time::from_decimal(time);
     }
 
@@ -271,7 +270,7 @@ mod time_convert_from_decimal {
 
     #[test]
     fn decimal_to_time() {
-        assert_eq!(Time::from_decimal(1.055_f32), Time { hours: 1, minutes: 3, seconds: 18 })
+        assert_eq!(Time::from_decimal(1.055), Time { hours: 1, minutes: 3, seconds: 18 })
     }
 
     //todo: here is crucial part, the conversion, many tests needed!!!
