@@ -17,6 +17,8 @@ pub(crate) struct Time {
 impl Time {
     pub fn from(time: &String) -> Result<Time, SimpleError> {
         let re_hhhmmss = Regex::new(r"^(?P<h>\d*):(?P<m>[0-5]?[0-9]?):?(?P<s>[0-5]?[0-9]?)$").unwrap();
+        //todo: better is to have two patterns hhhmmss and hhhmm - otherwise 1:66 is matched as 1:6:6
+        //todo: or maybe lets allow overflowing (i.e. 66 minutes, and just standarize?
         let re_hhhdddd = Regex::new(r"^\d*[,.]?\d*$").unwrap();
 
         return if re_hhhmmss.is_match(time) {

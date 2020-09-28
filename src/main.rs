@@ -1,4 +1,5 @@
 use exitfailure::ExitFailure;
+use log::LevelFilter;
 use simple_error::SimpleError;
 use simple_logger::SimpleLogger;
 use structopt::StructOpt;
@@ -7,8 +8,10 @@ mod cli;
 mod time;
 mod use_cases;
 
+
 fn main() -> Result<(), ExitFailure> {
-    SimpleLogger::new();
+    // todo: add --verbose for printing debug information (ERROR level as default without --verbose)
+    SimpleLogger::new().with_level(LevelFilter::Error).init().unwrap();
     let args = cli::Cli::from_args();
 
     //todo: how to put arguments parsing errors into exitcodes?
@@ -28,7 +31,7 @@ fn main() -> Result<(), ExitFailure> {
     }
 }
 
-fn use_case_picker(input: &String) -> Result<(String), SimpleError> {
+fn use_case_picker(input: &String) -> Result<String, SimpleError> {
     use regex::Regex;
     let re_hhhmmss = Regex::new(r"^\d*:\d*:?\d*$").unwrap();
     let re_hhhdddd = Regex::new(r"^\d*[,.]?\d*$").unwrap();
@@ -39,5 +42,7 @@ fn use_case_picker(input: &String) -> Result<(String), SimpleError> {
         use_cases::convert_decimal_to_time(input)
     } else {
         Err(SimpleError::new("Couldn't match input to conversion."))
-    }
+    };
 }
+
+//todo: add tests for exitcodes... external tests?
