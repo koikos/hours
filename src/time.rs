@@ -1,4 +1,5 @@
 use std::fmt;
+use std::str::FromStr;
 
 use regex::Regex;
 use simple_error::SimpleError;
@@ -14,10 +15,6 @@ pub(crate) struct Time {
 
 //todo: remove re pattern duplications in ::from() and ::parse
 impl Time {
-    pub fn from_str(time: &str) -> Result<Time, SimpleError> {
-        return Time::from(&String::from(time));
-    }
-
     pub fn from(time: &String) -> Result<Time, SimpleError> {
         let re_hhhmmss = Regex::new(r"^(?P<h>\d*):(?P<m>[0-5]?[0-9]?):?(?P<s>[0-5]?[0-9]?)$").unwrap();
         let re_hhhdddd = Regex::new(r"^\d*[,.]?\d*$").unwrap();
@@ -60,8 +57,11 @@ impl Time {
     }
 
     fn parse_hhhdddd(time: &String) -> Time {
-        let time = time.parse::<Decimal>().unwrap();
-        return Time::from_decimal(time);
+        let fixed_time = Time::fix_comma(&time);
+        let time_f64 = fixed_time.parse::<Decimal>().unwrap();
+        return Time::from_decimal(time_f64);
+
+        //Todo: Maybe more readable would be: decimal_string.fix_comma.parse_as_f64.convert_to_time
     }
 
     fn normalize(mut hours: u16, mut minutes: u16, mut seconds: u16) -> Time {
@@ -74,6 +74,19 @@ impl Time {
         return Time { hours: hours, minutes: minutes as u8, seconds: seconds as u8 };
         //todo: tests for standarize(), e.g. overflowing u16
     }
+
+    fn fix_comma(time: &str) -> std::borrow::Cow<'_, str> {
+        let re = Regex::new(r"[,]").unwrap();
+        return re.replace(&time, ".");
+    }
+}
+
+impl FromStr for Time {
+    type Err = SimpleError;
+
+    fn from_str(time: &str) -> Result<Time, SimpleError> {
+        return Time::from(&String::from(time));
+    }
 }
 
 impl fmt::Display for Time {
@@ -82,6 +95,7 @@ impl fmt::Display for Time {
         formatter.write_fmt(format_args!("{}:{:0>2}:{:0>2}", self.hours, self.minutes, self.seconds))
     }
 }
+
 
 #[cfg(test)]
 mod time_parse_hhhmmss_pattern {
