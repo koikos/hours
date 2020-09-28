@@ -5,15 +5,14 @@ use structopt::StructOpt;
 
 mod cli;
 mod time;
+mod use_cases;
 
 fn main() -> Result<(), ExitFailure> {
     SimpleLogger::new();
     let args = cli::Cli::from_args();
 
-    let result = picker(&args.time);
-
     //todo: how to put arguments parsing errors into exitcodes?
-    match result {
+    match use_case_picker(&args.time) {
         Ok(time) => {
             println!("{}", time);
             std::process::exit(exitcode::OK);
@@ -29,21 +28,16 @@ fn main() -> Result<(), ExitFailure> {
     }
 }
 
-fn picker(input: &String) -> Result<(String), SimpleError> {
+fn use_case_picker(input: &String) -> Result<(String), SimpleError> {
     use regex::Regex;
     let re_hhhmmss = Regex::new(r"^\d*:\d*:?\d*$").unwrap();
     let re_hhhdddd = Regex::new(r"^\d*[,.]?\d*$").unwrap();
 
     return if re_hhhmmss.is_match(input) {
-        let time = time::Time::from(&input)?;
-        Ok(format!("{}", time.to_decimal()))
+        use_cases::convert_time_to_decimal(input)
     } else if re_hhhdddd.is_match(input) {
-        let time = time::Time::from(&input)?;
-        Ok(time.to_string())
+        use_cases::convert_decimal_to_time(input)
     } else {
-        Err(SimpleError::new("Couldn't parse given time."))
+        Err(SimpleError::new("Couldn't match input to conversion."))
     }
-    //todo: add tests for this regex matcihng!
 }
-
-//todo: change mmm:ss to hhh:mm --> seconds are optional!

@@ -12,21 +12,18 @@ pub(crate) struct Time {
     seconds: u8,
 }
 
-//todo: remove re pattern duplications in parser choser function, i.e. ::from(), and parsing
+//todo: remove re pattern duplications in ::from() and ::parse
 impl Time {
     pub fn from_str(time: &str) -> Result<Time, SimpleError> {
         return Time::from(&String::from(time));
     }
 
     pub fn from(time: &String) -> Result<Time, SimpleError> {
-        let re_hhhmmss = Regex::new(r"^(?P<h>\d*):(?P<m>[0-5]?[0-9]?):(?P<s>[0-5]?[0-9]?)$").unwrap();
-        let re_mmmss = Regex::new(r"^(?P<h>\d*):(?P<m>[0-5]?[0-9]?)$").unwrap();
+        let re_hhhmmss = Regex::new(r"^(?P<h>\d*):(?P<m>[0-5]?[0-9]?):?(?P<s>[0-5]?[0-9]?)$").unwrap();
         let re_hhhdddd = Regex::new(r"^\d*[,.]?\d*$").unwrap();
 
         return if re_hhhmmss.is_match(time) {
             Ok(Time::parse_hhhmmss(&time))
-        } else if re_mmmss.is_match(time) {
-            Ok(Time::parse_mmmss(&time))
         } else if re_hhhdddd.is_match(time) {
             Ok(Time::parse_hhhdddd(&time))
         } else {
@@ -51,23 +48,15 @@ impl Time {
     }
 
     fn parse_hhhmmss(time: &String) -> Time {
-        let re_hhhmmss = Regex::new(r"^(?P<h>\d*):(?P<m>[0-5]?[0-9]?):(?P<s>[0-5]?[0-9]?)$").unwrap();
+        let re_hhhmmss = Regex::new(r"^(?P<h>\d*):(?P<m>[0-5]?[0-9]?):?(?P<s>[0-5]?[0-9]?)$").unwrap();
         let caps = re_hhhmmss.captures(&time).unwrap();
-        let hours = &caps["h"].parse::<u16>().unwrap();
-        let minutes = &caps["m"].parse::<u8>().unwrap(); // todo: if "" then it should be 0
-        let seconds = &caps["s"].parse::<u8>().unwrap(); // todo: if "" then it should be 0
-        return Time { hours: *hours, minutes: *minutes, seconds: *seconds };
-        //todo: error handling (IntParseError), return result?
-    }
 
-    fn parse_mmmss(time: &String) -> Time {
-        let re_mmmss = Regex::new(r"^(?P<m>\d*):(?P<s>[0-5]?[0-9]?)$").unwrap();
-        let caps = re_mmmss.captures(&time).unwrap();
-        let minutes = &caps["m"].parse::<u16>().unwrap(); // todo: if "" then it should be 0
-        let seconds = &caps["s"].parse::<u16>().unwrap(); // todo: if "" then it should be 0
-        return Time::normalize(0, *minutes, *seconds);
-        //todo: error handling (IntParseError)
-        //todo: standarize minutes
+        let hours = if &caps["h"] == "" { 0_u16 } else { *&caps["h"].parse::<u16>().unwrap() };
+        let minutes = if &caps["m"] == "" { 0_u8 } else { *&caps["m"].parse::<u8>().unwrap() };
+        let seconds = if &caps["s"] == "" { 0_u8 } else { *&caps["s"].parse::<u8>().unwrap() };
+
+        return Time { hours, minutes, seconds };
+        //todo: error handling (IntParseError), return result?
     }
 
     fn parse_hhhdddd(time: &String) -> Time {
@@ -104,8 +93,23 @@ mod time_parse_hhhmmss_pattern {
     }
 
     #[test]
+    fn hours_allow_0_digit() {
+        assert_eq!(Time::from_str(":01:23"), Ok(Time { hours: 0, minutes: 1, seconds: 23 }))
+    }
+
+    #[test]
+    fn hours_allow_0_digit_and_no_seconds() {
+        assert_eq!(Time::from_str(":01"), Ok(Time { hours: 0, minutes: 1, seconds: 0 }))
+    }
+
+    #[test]
     fn hours_allow_1_digit() {
         assert_eq!(Time::from_str("1:23:45"), Ok(Time { hours: 1, minutes: 23, seconds: 45 }))
+    }
+
+    #[test]
+    fn hours_allow_1_digit_and_no_seconds() {
+        assert_eq!(Time::from_str("1:23"), Ok(Time { hours: 1, minutes: 23, seconds: 0 }))
     }
 
     #[test]
@@ -114,8 +118,18 @@ mod time_parse_hhhmmss_pattern {
     }
 
     #[test]
+    fn hours_allow_2_digits_and_no_seconds() {
+        assert_eq!(Time::from_str("10:23"), Ok(Time { hours: 10, minutes: 23, seconds: 00 }))
+    }
+
+    #[test]
     fn hours_allow_3_digits() {
         assert_eq!(Time::from_str("100:23:45"), Ok(Time { hours: 100, minutes: 23, seconds: 45 }))
+    }
+
+    #[test]
+    fn hours_allow_3_digits_and_no_seconds() {
+        assert_eq!(Time::from_str("100:23"), Ok(Time { hours: 100, minutes: 23, seconds: 00 }))
     }
 
     #[test]
@@ -124,13 +138,28 @@ mod time_parse_hhhmmss_pattern {
     }
 
     #[test]
+    fn minutes_allow_0_digits_and_no_seconds() {
+        assert_eq!(Time::from_str("1:"), Ok(Time { hours: 1, minutes: 0, seconds: 0 }))
+    }
+
+    #[test]
     fn minutes_allow_1_digit() {
         assert_eq!(Time::from_str("1:2:45"), Ok(Time { hours: 1, minutes: 2, seconds: 45 }))
     }
 
     #[test]
+    fn minutes_allow_1_digit_and_no_seconds() {
+        assert_eq!(Time::from_str("1:2"), Ok(Time { hours: 1, minutes: 2, seconds: 0 }))
+    }
+
+    #[test]
     fn minutes_allow_2_digits() {
         assert_eq!(Time::from_str("1:23:45"), Ok(Time { hours: 1, minutes: 23, seconds: 45 }))
+    }
+
+    #[test]
+    fn minutes_allow_2_digits_and_no_seconds() {
+        assert_eq!(Time::from_str("1:23"), Ok(Time { hours: 1, minutes: 23, seconds: 0 }))
     }
 
     #[test]
@@ -170,66 +199,6 @@ mod time_parse_hhhmmss_pattern {
 }
 
 #[cfg(test)]
-mod time_parse_mmmss_pattern {
-    use super::*;
-
-    #[test]
-    fn disallow_negative_time() {
-        assert_eq!(Time::from_str("-1:23"), Err(SimpleError::new("Couldn't parse given time.")));
-    }
-
-    #[test]
-    fn minutes_allow_0_digit() {
-        assert_eq!(Time::from_str(":01"), Ok(Time { hours: 0, minutes: 0, seconds: 1 }))
-    }
-
-    #[test]
-    fn minutes_allow_1_digit() {
-        assert_eq!(Time::from_str("1:23"), Ok(Time { hours: 0, minutes: 1, seconds: 23 }))
-    }
-
-    #[test]
-    fn minutes_allow_2_digits() {
-        assert_eq!(Time::from_str("10:23"), Ok(Time { hours: 0, minutes: 10, seconds: 23 }))
-    }
-
-    #[test]
-    fn minutes_allow_3_digits() {
-        assert_eq!(Time::from_str("100:23"), Ok(Time { hours: 1, minutes: 40, seconds: 23 }))
-    }
-
-    #[test]
-    fn minutes_wrap() {
-        assert_eq!(Time::from_str("60:01"), Ok(Time { hours: 1, minutes: 00, seconds: 01 }))
-    }
-
-    #[test]
-    fn seconds_allow_0_digits() {
-        assert_eq!(Time::from_str("1:"), Ok(Time { hours: 0, minutes: 1, seconds: 00 }))
-    }
-
-    #[test]
-    fn seconds_allow_1_digit() {
-        assert_eq!(Time::from_str("1:2"), Ok(Time { hours: 0, minutes: 1, seconds: 02 }))
-    }
-
-    #[test]
-    fn seconds_allow_2_digits() {
-        assert_eq!(Time::from_str("1:23"), Ok(Time { hours: 0, minutes: 1, seconds: 23 }))
-    }
-
-    #[test]
-    fn seconds_allow_up_to_59() {
-        assert_eq!(Time::from_str("0:59"), Ok(Time { hours: 0, minutes: 0, seconds: 59 }))
-    }
-
-    #[test]
-    fn seconds_disallow_more_than_59() {
-        assert_eq!(Time::from_str("0:60"), Err(SimpleError::new("Couldn't parse given time.")));
-    }
-}
-
-#[cfg(test)]
 mod time_parse_hhhdddd_pattern {
     use super::*;
 
@@ -249,12 +218,12 @@ mod time_parse_hhhdddd_pattern {
     }
 
     #[test]
-    fn allow_none_separator_and_decimal_part() {
+    fn allow_no_decimal_part() {
         assert_eq!(Time::from_str("1"), Ok(Time { hours: 1, minutes: 0, seconds: 0 }))
     }
 
     #[test]
-    fn allow_separatore_and_none_decimal_part() {
+    fn allow_no_decimal_part_after_separator() {
         assert_eq!(Time::from_str("1."), Ok(Time { hours: 1, minutes: 0, seconds: 0 }))
     }
 
@@ -327,4 +296,3 @@ mod time_normalization {
         assert_eq!(Time::normalize(1, 59, 60), Time { hours: 2, minutes: 0, seconds: 0 });
     }
 }
-
