@@ -10,7 +10,10 @@ mod use_cases;
 
 fn main() -> Result<(), ExitFailure> {
     // todo: add --verbose for printing debug information (ERROR level as default without --verbose)
-    SimpleLogger::new().with_level(LevelFilter::Error).init().unwrap();
+    SimpleLogger::new()
+        .with_level(LevelFilter::Error)
+        .init()
+        .unwrap();
     let args = cli::Cli::from_args();
 
     //todo: how to put arguments parsing errors into exitcodes?

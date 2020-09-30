@@ -17,7 +17,8 @@ impl Time {
     pub fn from(time: &String) -> Result<Time, SimpleError> {
         //todo: better is to have two patterns hhhmmss and hhhmm - otherwise 1:66 is matched as 1:6:6
         //todo: or maybe lets allow overflowing (i.e. 66 minutes, and just standarize?
-        let re_hhhmmss = Regex::new(r"^(?P<h>\d*):(?P<m>[0-5]?[0-9]?):?(?P<s>[0-5]?[0-9]?)$").unwrap();
+        let re_hhhmmss =
+            Regex::new(r"^(?P<h>\d*):(?P<m>[0-5]?[0-9]?):?(?P<s>[0-5]?[0-9]?)$").unwrap();
         let re_hhhdddd = Regex::new(r"^\d*[,.]?\d*$").unwrap();
 
         return if re_hhhmmss.is_match(time) {
@@ -36,7 +37,11 @@ impl Time {
         let minutes = Decimal::round(time);
         time = (time - minutes) * 60.0;
         let seconds = Decimal::round(time);
-        return Time { hours: hours as u16, minutes: minutes as u8, seconds: seconds as u8, };
+        return Time {
+            hours: hours as u16,
+            minutes: minutes as u8,
+            seconds: seconds as u8,
+        };
     }
 
     pub fn to_decimal(&self) -> Decimal {
@@ -47,12 +52,11 @@ impl Time {
     }
 
     fn parse_hhhmmss(hours: &str, minutes: &str, seconds: &str) -> Time {
-        let hours = if hours == "" {0_u16 } else { hours.parse::<u16>().unwrap() };
-        let minutes = if minutes == "" { 0_u8 } else { minutes.parse::<u8>().unwrap() };
-        let seconds = if seconds == "" { 0_u8 } else { seconds.parse::<u8>().unwrap() };
-
-        return Time { hours, minutes, seconds, };
-        //todo: error handling (IntParseError), return result?
+        Time {
+            hours: hours.parse::<u16>().unwrap_or(0_u16),
+            minutes: minutes.parse::<u8>().unwrap_or(0_u8),
+            seconds: seconds.parse::<u8>().unwrap_or(0_u8),
+        }
     }
 
     fn parse_hhhdddd(time: &String) -> Time {
@@ -70,7 +74,11 @@ impl Time {
         hours = hours + u16::div_euclid(minutes, 60);
         minutes = u16::rem_euclid(minutes, 60);
 
-        return Time { hours: hours, minutes: minutes as u8, seconds: seconds as u8, };
+        return Time {
+            hours: hours,
+            minutes: minutes as u8,
+            seconds: seconds as u8,
+        };
         //todo: tests for standarize(), e.g. overflowing u16
     }
 
@@ -104,112 +112,234 @@ mod time_parse_hhhmmss_pattern {
 
     #[test]
     fn disallow_negative_time() {
-        assert_eq!(Time::from_str("-1:23:45"), Err(SimpleError::new("Couldn't parse given time.")));
+        assert_eq!(
+            Time::from_str("-1:23:45"),
+            Err(SimpleError::new("Couldn't parse given time."))
+        );
     }
 
     #[test]
     fn hours_allow_0_digit() {
-        assert_eq!(Time::from_str(":01:23"), Ok(Time { hours: 0, minutes: 1, seconds: 23 }))
+        let given = Time::from_str(":01:23").unwrap();
+        let expected = Time {
+            hours: 0,
+            minutes: 1,
+            seconds: 23,
+        };
+        assert_eq!(given, expected)
     }
 
     #[test]
     fn hours_allow_0_digit_and_no_seconds() {
-        assert_eq!(Time::from_str(":01"), Ok(Time { hours: 0, minutes: 1, seconds: 0 }))
+        let given = Time::from_str(":01").unwrap();
+        let expected = Time {
+            hours: 0,
+            minutes: 1,
+            seconds: 0,
+        };
+        assert_eq!(given, expected)
     }
 
     #[test]
     fn hours_allow_1_digit() {
-        assert_eq!(Time::from_str("1:23:45"), Ok(Time { hours: 1, minutes: 23, seconds: 45 }))
+        let given = Time::from_str("1:23:45").unwrap();
+        let expected = Time {
+            hours: 1,
+            minutes: 23,
+            seconds: 45,
+        };
+        assert_eq!(given, expected)
     }
 
     #[test]
     fn hours_allow_1_digit_and_no_seconds() {
-        assert_eq!(Time::from_str("1:23"), Ok(Time { hours: 1, minutes: 23, seconds: 0 }))
+        let given = Time::from_str("1:23").unwrap();
+        let expected = Time {
+            hours: 1,
+            minutes: 23,
+            seconds: 0,
+        };
+        assert_eq!(given, expected)
     }
 
     #[test]
     fn hours_allow_2_digits() {
-        assert_eq!(Time::from_str("10:23:45"), Ok(Time { hours: 10, minutes: 23, seconds: 45 }))
+        let given = Time::from_str("10:23:45").unwrap();
+        let expected = Time {
+            hours: 10,
+            minutes: 23,
+            seconds: 45,
+        };
+        assert_eq!(given, expected)
     }
 
     #[test]
     fn hours_allow_2_digits_and_no_seconds() {
-        assert_eq!(Time::from_str("10:23"), Ok(Time { hours: 10, minutes: 23, seconds: 00 }))
+        let given = Time::from_str("10:23").unwrap();
+        let expected = Time {
+            hours: 10,
+            minutes: 23,
+            seconds: 00,
+        };
+        assert_eq!(given, expected)
     }
 
     #[test]
     fn hours_allow_3_digits() {
-        assert_eq!(Time::from_str("100:23:45"), Ok(Time { hours: 100, minutes: 23, seconds: 45 }))
+        let given = Time::from_str("100:23:45").unwrap();
+        let expected = Time {
+            hours: 100,
+            minutes: 23,
+            seconds: 45,
+        };
+        assert_eq!(given, expected)
     }
 
     #[test]
     fn hours_allow_3_digits_and_no_seconds() {
-        assert_eq!(Time::from_str("100:23"), Ok(Time { hours: 100, minutes: 23, seconds: 00 }))
+        let given = Time::from_str("100:23").unwrap();
+        let expected = Time {
+            hours: 100,
+            minutes: 23,
+            seconds: 00,
+        };
+        assert_eq!(given, expected)
     }
 
     #[test]
     fn minutes_allow_0_digits() {
-        assert_eq!(Time::from_str("1::45"), Ok(Time { hours: 1, minutes: 0, seconds: 45 }))
+        let given = Time::from_str("1::45").unwrap();
+        let expected = Time {
+            hours: 1,
+            minutes: 0,
+            seconds: 45,
+        };
+        assert_eq!(given, expected)
     }
 
     #[test]
     fn minutes_allow_0_digits_and_no_seconds() {
-        assert_eq!(Time::from_str("1:"), Ok(Time { hours: 1, minutes: 0, seconds: 0 }))
+        let given = Time::from_str("1:").unwrap();
+        let expected = Time {
+            hours: 1,
+            minutes: 0,
+            seconds: 0,
+        };
+        assert_eq!(given, expected)
     }
 
     #[test]
     fn minutes_allow_1_digit() {
-        assert_eq!(Time::from_str("1:2:45"), Ok(Time { hours: 1, minutes: 2, seconds: 45 }))
+        let given = Time::from_str("1:2:45").unwrap();
+        let expected = Time {
+            hours: 1,
+            minutes: 2,
+            seconds: 45,
+        };
+        assert_eq!(given, expected)
     }
 
     #[test]
     fn minutes_allow_1_digit_and_no_seconds() {
-        assert_eq!(Time::from_str("1:2"), Ok(Time { hours: 1, minutes: 2, seconds: 0 }))
+        let given = Time::from_str("1:2").unwrap();
+        let expected = Time {
+            hours: 1,
+            minutes: 2,
+            seconds: 0,
+        };
+        assert_eq!(given, expected)
     }
 
     #[test]
     fn minutes_allow_2_digits() {
-        assert_eq!(Time::from_str("1:23:45"), Ok(Time { hours: 1, minutes: 23, seconds: 45 }))
+        let given = Time::from_str("1:23:45").unwrap();
+        let expected = Time {
+            hours: 1,
+            minutes: 23,
+            seconds: 45,
+        };
+        assert_eq!(given, expected)
     }
 
     #[test]
     fn minutes_allow_2_digits_and_no_seconds() {
-        assert_eq!(Time::from_str("1:23"), Ok(Time { hours: 1, minutes: 23, seconds: 0 }))
+        let given = Time::from_str("1:23").unwrap();
+        let expected = Time {
+            hours: 1,
+            minutes: 23,
+            seconds: 0,
+        };
+        assert_eq!(given, expected)
     }
 
     #[test]
     fn minutes_allow_up_to_59() {
-        assert_eq!(Time::from_str("1:59:45"), Ok(Time { hours: 1, minutes: 59, seconds: 45 }))
+        let given = Time::from_str("1:59:45").unwrap();
+        let expected = Time {
+            hours: 1,
+            minutes: 59,
+            seconds: 45,
+        };
+        assert_eq!(given, expected)
     }
 
     #[test]
     fn minutes_disallow_more_than_59() {
-        assert_eq!(Time::from_str("0:60:00"), Err(SimpleError::new("Couldn't parse given time.")))
+        assert_eq!(
+            Time::from_str("0:60:00"),
+            Err(SimpleError::new("Couldn't parse given time."))
+        )
     }
 
     #[test]
     fn seconds_allow_0_digits() {
-        assert_eq!(Time::from_str("1:23:"), Ok(Time { hours: 1, minutes: 23, seconds: 00 }))
+        let given = Time::from_str("1:23:").unwrap();
+        let expected = Time {
+            hours: 1,
+            minutes: 23,
+            seconds: 00,
+        };
+        assert_eq!(given, expected)
     }
 
     #[test]
     fn seconds_allow_1_digit() {
-        assert_eq!(Time::from_str("1:23:4"), Ok(Time { hours: 1, minutes: 23, seconds: 4 }))
+        let given = Time::from_str("1:23:4").unwrap();
+        let expected = Time {
+            hours: 1,
+            minutes: 23,
+            seconds: 4,
+        };
+        assert_eq!(given, expected)
     }
 
     #[test]
     fn seconds_allow_2_digits() {
-        assert_eq!(Time::from_str("1:23:45"), Ok(Time { hours: 1, minutes: 23, seconds: 45 }))
+        let given = Time::from_str("1:23:45").unwrap();
+        let expected = Time {
+            hours: 1,
+            minutes: 23,
+            seconds: 45,
+        };
+        assert_eq!(given, expected)
     }
 
     #[test]
     fn seconds_allow_up_to_59() {
-        assert_eq!(Time::from_str("1:23:59"), Ok(Time { hours: 1, minutes: 23, seconds: 59 }))
+        let given = Time::from_str("1:23:59").unwrap();
+        let expected = Time {
+            hours: 1,
+            minutes: 23,
+            seconds: 59,
+        };
+        assert_eq!(given, expected)
     }
 
     #[test]
     fn seconds_disallow_more_than_59() {
-        assert_eq!(Time::from_str("1:23:60"), Err(SimpleError::new("Couldn't parse given time.")))
+        let given = Time::from_str("1:23:60");
+        let expected = Err(SimpleError::new("Couldn't parse given time."));
+        assert_eq!(given, expected)
     }
 }
 
@@ -219,62 +349,109 @@ mod time_parse_hhhdddd_pattern {
 
     #[test]
     fn disallow_negative_time() {
-        assert_eq!(Time::from_str("-1:23:45"), Err(SimpleError::new("Couldn't parse given time.")));
+        let given = Time::from_str("-1:23:45");
+        let expected = Err(SimpleError::new("Couldn't parse given time."));
+        assert_eq!(given, expected);
     }
 
     #[test]
     fn allow_comma_separator() {
-        assert_eq!(Time::from_str("1,055"), Ok(Time { hours: 1, minutes: 3, seconds: 18 }))
+        let given = Time::from_str("1,055").unwrap();
+        let expected = Time {
+            hours: 1,
+            minutes: 3,
+            seconds: 18,
+        };
+        assert_eq!(given, expected)
     }
 
     #[test]
     fn allow_dot_separator() {
-        assert_eq!(Time::from_str("1.055"), Ok(Time { hours: 1, minutes: 3, seconds: 18 }))
+        let given = Time::from_str("1.055").unwrap();
+        let expected = Time {
+            hours: 1,
+            minutes: 3,
+            seconds: 18,
+        };
+        assert_eq!(given, expected)
     }
 
     #[test]
     fn allow_no_decimal_part() {
-        assert_eq!(Time::from_str("1"), Ok(Time { hours: 1, minutes: 0, seconds: 0 }))
+        let given = Time::from_str("1").unwrap();
+        let expected = Time {
+            hours: 1,
+            minutes: 0,
+            seconds: 0,
+        };
+        assert_eq!(given, expected)
     }
 
     #[test]
     fn allow_no_decimal_part_after_separator() {
-        assert_eq!(Time::from_str("1."), Ok(Time { hours: 1, minutes: 0, seconds: 0 }))
+        let given = Time::from_str("1.").unwrap();
+        let expected = Time {
+            hours: 1,
+            minutes: 0,
+            seconds: 0,
+        };
+        assert_eq!(given, expected)
     }
 
     #[test]
     fn hours_allow_0_digits() {
-        assert_eq!(Time::from_str(".055"), Ok(Time { hours: 0, minutes: 3, seconds: 18 }))
+        let given = Time::from_str(".055").unwrap();
+        let expected = Time {
+            hours: 0,
+            minutes: 3,
+            seconds: 18,
+        };
+        assert_eq!(given, expected)
     }
 }
 
 #[cfg(test)]
 mod time_convert_from_decimal {
+    //todo: here is crucial part, the conversion, many tests needed!!!
+
     use super::*;
 
     #[test]
     fn decimal_to_time() {
-        assert_eq!(Time::from_decimal(1.055), Time { hours: 1, minutes: 3, seconds: 18 })
+        let given = Time::from_decimal(1.055);
+        let expected = Time {
+            hours: 1,
+            minutes: 3,
+            seconds: 18,
+        };
+        assert_eq!(given, expected)
     }
-
-    //todo: here is crucial part, the conversion, many tests needed!!!
 }
 
 #[cfg(test)]
 mod time_convert_to_decimal {
+    //todo: here is crucial part, the conversion, many tests needed!!!
     use super::*;
 
     #[test]
     fn time_to_decimal() {
-        assert_eq!(Time { hours: 1, minutes: 30, seconds: 45 }.to_decimal(), 1.5125)
+        let given_time = Time {
+            hours: 1,
+            minutes: 30,
+            seconds: 45,
+        };
+        assert_eq!(given_time.to_decimal(), 1.5125)
     }
 
     #[test]
     fn test_too_many_minutes() {
-        assert_eq!(Time { hours: 1, minutes: 60, seconds: 00 }.to_decimal(), 2.0)
+        let given_time = Time {
+            hours: 1,
+            minutes: 60,
+            seconds: 00,
+        };
+        assert_eq!(given_time.to_decimal(), 2.0)
     }
-
-    //todo: here is crucial part, the conversion, many tests needed!!!
 }
 
 #[cfg(test)]
@@ -283,7 +460,13 @@ mod time_formatting {
 
     #[test]
     fn string_representation() {
-        assert_eq!(format!("{}", Time { hours: 123, minutes: 2, seconds: 3 }), "123:02:03");
+        let given_time = Time {
+            hours: 123,
+            minutes: 2,
+            seconds: 3,
+        };
+        let given = format!("{}", given_time);
+        assert_eq!(given, "123:02:03");
     }
 }
 
@@ -293,21 +476,45 @@ mod time_normalization {
 
     #[test]
     fn preserves_already_normalized_values() {
-        assert_eq!(Time::normalize(1, 59, 59), Time { hours: 1, minutes: 59, seconds: 59 });
+        let given = Time::normalize(1, 59, 59);
+        let expected = Time {
+            hours: 1,
+            minutes: 59,
+            seconds: 59,
+        };
+        assert_eq!(given, expected);
     }
 
     #[test]
     fn normalizes_seconds() {
-        assert_eq!(Time::normalize(1, 2, 60), Time { hours: 1, minutes: 3, seconds: 0 });
+        let given = Time::normalize(1, 2, 60);
+        let expected = Time {
+            hours: 1,
+            minutes: 3,
+            seconds: 0,
+        };
+        assert_eq!(given, expected);
     }
 
     #[test]
     fn normalizes_minutes() {
-        assert_eq!(Time::normalize(1, 60, 1), Time { hours: 2, minutes: 0, seconds: 1 });
+        let given = Time::normalize(1, 60, 1);
+        let expected = Time {
+            hours: 2,
+            minutes: 0,
+            seconds: 1,
+        };
+        assert_eq!(given, expected);
     }
 
     #[test]
     fn normalizes_minutes_and_seconds() {
-        assert_eq!(Time::normalize(1, 59, 60), Time { hours: 2, minutes: 0, seconds: 0 });
+        let given = Time::normalize(1, 59, 60);
+        let expected = Time {
+            hours: 2,
+            minutes: 0,
+            seconds: 0,
+        };
+        assert_eq!(given, expected);
     }
 }
