@@ -13,16 +13,16 @@ pub(crate) struct Time {
     seconds: u8,
 }
 
-//todo: remove re pattern duplications in ::from() and ::parse
 impl Time {
     pub fn from(time: &String) -> Result<Time, SimpleError> {
-        let re_hhhmmss = Regex::new(r"^(?P<h>\d*):(?P<m>[0-5]?[0-9]?):?(?P<s>[0-5]?[0-9]?)$").unwrap();
         //todo: better is to have two patterns hhhmmss and hhhmm - otherwise 1:66 is matched as 1:6:6
         //todo: or maybe lets allow overflowing (i.e. 66 minutes, and just standarize?
+        let re_hhhmmss = Regex::new(r"^(?P<h>\d*):(?P<m>[0-5]?[0-9]?):?(?P<s>[0-5]?[0-9]?)$").unwrap();
         let re_hhhdddd = Regex::new(r"^\d*[,.]?\d*$").unwrap();
 
         return if re_hhhmmss.is_match(time) {
-            Ok(Time::parse_hhhmmss(&time))
+            let caps = re_hhhmmss.captures(&time).unwrap();
+            Ok(Time::parse_hhhmmss(&caps["h"], &caps["m"], &caps["s"]))
         } else if re_hhhdddd.is_match(time) {
             Ok(Time::parse_hhhdddd(&time))
         } else {
@@ -36,7 +36,7 @@ impl Time {
         let minutes = Decimal::round(time);
         time = (time - minutes) * 60.0;
         let seconds = Decimal::round(time);
-        return Time { hours: hours as u16, minutes: minutes as u8, seconds: seconds as u8 };
+        return Time { hours: hours as u16, minutes: minutes as u8, seconds: seconds as u8, };
     }
 
     pub fn to_decimal(&self) -> Decimal {
@@ -46,15 +46,12 @@ impl Time {
         return hours + minutes / 60.0 + seconds / 3600.0;
     }
 
-    fn parse_hhhmmss(time: &String) -> Time {
-        let re_hhhmmss = Regex::new(r"^(?P<h>\d*):(?P<m>[0-5]?[0-9]?):?(?P<s>[0-5]?[0-9]?)$").unwrap();
-        let caps = re_hhhmmss.captures(&time).unwrap();
+    fn parse_hhhmmss(hours: &str, minutes: &str, seconds: &str) -> Time {
+        let hours = if hours == "" {0_u16 } else { hours.parse::<u16>().unwrap() };
+        let minutes = if minutes == "" { 0_u8 } else { minutes.parse::<u8>().unwrap() };
+        let seconds = if seconds == "" { 0_u8 } else { seconds.parse::<u8>().unwrap() };
 
-        let hours = if &caps["h"] == "" { 0_u16 } else { *&caps["h"].parse::<u16>().unwrap() };
-        let minutes = if &caps["m"] == "" { 0_u8 } else { *&caps["m"].parse::<u8>().unwrap() };
-        let seconds = if &caps["s"] == "" { 0_u8 } else { *&caps["s"].parse::<u8>().unwrap() };
-
-        return Time { hours, minutes, seconds };
+        return Time { hours, minutes, seconds, };
         //todo: error handling (IntParseError), return result?
     }
 
@@ -73,7 +70,7 @@ impl Time {
         hours = hours + u16::div_euclid(minutes, 60);
         minutes = u16::rem_euclid(minutes, 60);
 
-        return Time { hours: hours, minutes: minutes as u8, seconds: seconds as u8 };
+        return Time { hours: hours, minutes: minutes as u8, seconds: seconds as u8, };
         //todo: tests for standarize(), e.g. overflowing u16
     }
 
@@ -94,10 +91,12 @@ impl FromStr for Time {
 impl fmt::Display for Time {
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         //write!(formatter, "{}:{}:{}", self.hours, self.minutes, self.seconds)
-        formatter.write_fmt(format_args!("{}:{:0>2}:{:0>2}", self.hours, self.minutes, self.seconds))
+        formatter.write_fmt(format_args!(
+            "{}:{:0>2}:{:0>2}",
+            self.hours, self.minutes, self.seconds
+        ))
     }
 }
-
 
 #[cfg(test)]
 mod time_parse_hhhmmss_pattern {

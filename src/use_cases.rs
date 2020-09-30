@@ -16,7 +16,6 @@ pub fn convert_decimal_to_time(hhhdddd: &String) -> Result<String, SimpleError> 
     Ok(time.to_string())
 }
 
-
 #[cfg(test)]
 mod conversion_to_decimal {
     use super::*;

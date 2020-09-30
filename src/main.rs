@@ -8,7 +8,6 @@ mod cli;
 mod time;
 mod use_cases;
 
-
 fn main() -> Result<(), ExitFailure> {
     // todo: add --verbose for printing debug information (ERROR level as default without --verbose)
     SimpleLogger::new().with_level(LevelFilter::Error).init().unwrap();
