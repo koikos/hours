@@ -53,7 +53,7 @@ impl Time {
         Time::normalize(
             hours.parse::<u16>().unwrap_or(0_u16),
             minutes.parse::<u16>().unwrap_or(0_u16),
-            seconds.parse::<u16>().unwrap_or(0_u16)
+            seconds.parse::<u16>().unwrap_or(0_u16),
         )
     }
 
@@ -63,19 +63,18 @@ impl Time {
         return Time::from_decimal(time_f64);
     }
 
-    fn normalize(mut hours: u16, mut minutes: u16, mut seconds: u16) -> Time {
-        minutes = minutes + u16::div_euclid(seconds, 60);
-        seconds = u16::rem_euclid(seconds, 60);
+    fn normalize(hours: u16, minutes: u16, seconds: u16) -> Time {
+        let mut minutes_u32 = minutes as u32 + u32::div_euclid(seconds as u32, 60);
+        let seconds_u32 = u32::rem_euclid(seconds as u32, 60);
 
-        hours = hours + u16::div_euclid(minutes, 60);
-        minutes = u16::rem_euclid(minutes, 60);
+        let hours_u32 = hours as u32 + u32::div_euclid(minutes_u32, 60);
+        minutes_u32 = u32::rem_euclid(minutes_u32, 60);
 
         return Time {
-            hours: hours,
-            minutes: minutes as u8,
-            seconds: seconds as u8,
+            hours: hours_u32 as u16,
+            minutes: minutes_u32 as u8,
+            seconds: seconds_u32 as u8,
         };
-        //todo: tests for normalize(), e.g. overflowing u16
     }
 
     fn fix_comma(time: &str) -> std::borrow::Cow<'_, str> {
@@ -447,7 +446,6 @@ mod time_parse_hhhdddd_pattern {
 
 #[cfg(test)]
 mod time_convert_from_decimal {
-    //todo: here is crucial part, the conversion, many tests needed!!!
 
     use super::*;
 
@@ -461,11 +459,34 @@ mod time_convert_from_decimal {
         };
         assert_eq!(given, expected)
     }
+
+    #[test]
+    fn decimal_to_time_sixty_seconds_is_one_minute() {
+        let sixty_seconds = 60.0 / 3600.0;
+        let given = Time::from_decimal(sixty_seconds);
+        let expected = Time {
+            hours: 0,
+            minutes: 1,
+            seconds: 0,
+        };
+        assert_eq!(given, expected)
+    }
+
+    #[test]
+    fn decimal_to_time_normalized_sixty_minutes_is_one_hour() {
+        let sixty_minutes = 60.0 / 60.0;
+        let given = Time::from_decimal(sixty_minutes);
+        let expected = Time {
+            hours: 1,
+            minutes: 0,
+            seconds: 0,
+        };
+        assert_eq!(given, expected)
+    }
 }
 
 #[cfg(test)]
 mod time_convert_to_decimal {
-    //todo: here is crucial part, the conversion, many tests needed!!!
     use super::*;
 
     #[test]
@@ -549,6 +570,39 @@ mod time_normalization {
             hours: 2,
             minutes: 0,
             seconds: 0,
+        };
+        assert_eq!(given, expected);
+    }
+
+    #[test]
+    fn normalize_seconds_and_minutes_without_overflow() {
+        let given = Time::normalize(64_425u16, 65_535u16, 65_535u16);
+        let expected = Time {
+            hours: 65_535u16,
+            minutes: 27u8,
+            seconds: 15u8,
+        };
+        assert_eq!(given, expected);
+    }
+
+    #[test]
+    fn normalize_to_max_value() {
+        let given = Time::normalize(64_426u16, 65_508u16, 65_519u16);
+        let expected = Time {
+            hours: 65_535u16,
+            minutes: 59u8,
+            seconds: 59u8,
+        };
+        assert_eq!(given, expected);
+    }
+
+    #[test]
+    fn normalize_overflowing_resets_to_zero() {
+        let given = Time::normalize(64_426u16, 65_508u16, 65_520u16);
+        let expected = Time {
+            hours: 0u16,
+            minutes: 0u8,
+            seconds: 0u8,
         };
         assert_eq!(given, expected);
     }

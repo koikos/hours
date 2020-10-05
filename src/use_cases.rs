@@ -17,10 +17,9 @@ pub fn convert_decimal_to_time(hhhdddd: &String) -> Result<String, SimpleError> 
 }
 
 #[cfg(test)]
-mod conversion_to_decimal {
+mod acceptance_tests {
     use super::*;
 
-    //todo: it's a integration test... could Time be mocked and unit test could test just formatting
     #[test]
     fn prints_4_decimal_digits() -> Result<(), SimpleError> {
         let given = convert_time_to_decimal(&String::from("1:15:00"))?;
