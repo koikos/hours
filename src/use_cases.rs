@@ -30,8 +30,10 @@ mod conversion_to_decimal {
     }
 
     #[test]
-    fn based_bug_parsing_minutes_overflow_while_no_seconds_given() {
-        let current = convert_time_to_decimal(&String::from("1:66"));
-        assert_eq!(current, Err(SimpleError::new("Couldn't parse given time.")));
+    fn based_bug_parsing_minutes_overflow_while_no_seconds_given() -> Result<(), SimpleError> {
+        let time1 = convert_time_to_decimal(&String::from("2:06:00"))?;
+        let time2 = convert_time_to_decimal(&String::from("1:66"))?;
+        assert_eq!(time1, time2);
+        Ok(())
     }
 }

@@ -15,15 +15,13 @@ pub(crate) struct Time {
 
 impl Time {
     pub fn from(time: &String) -> Result<Time, SimpleError> {
-        //todo: better is to have two patterns hhhmmss and hhhmm - otherwise 1:66 is matched as 1:6:6
-        //todo: or maybe lets allow overflowing (i.e. 66 minutes, and just standarize?
-        let re_hhhmmss =
-            Regex::new(r"^(?P<h>\d*):(?P<m>[0-5]?[0-9]?):?(?P<s>[0-5]?[0-9]?)$").unwrap();
+        let re_hhhmmss = Regex::new(r"^(?P<h>\d*):(?P<m>\d*):?(?P<s>\d*)$").unwrap();
         let re_hhhdddd = Regex::new(r"^\d*[,.]?\d*$").unwrap();
 
         return if re_hhhmmss.is_match(time) {
             let caps = re_hhhmmss.captures(&time).unwrap();
-            Ok(Time::parse_hhhmmss(&caps["h"], &caps["m"], &caps["s"]))
+            let time = Time::parse_hhhmmss(&caps["h"], &caps["m"], &caps["s"]);
+            Ok(time)
         } else if re_hhhdddd.is_match(time) {
             Ok(Time::parse_hhhdddd(&time))
         } else {
@@ -52,19 +50,17 @@ impl Time {
     }
 
     fn parse_hhhmmss(hours: &str, minutes: &str, seconds: &str) -> Time {
-        Time {
-            hours: hours.parse::<u16>().unwrap_or(0_u16),
-            minutes: minutes.parse::<u8>().unwrap_or(0_u8),
-            seconds: seconds.parse::<u8>().unwrap_or(0_u8),
-        }
+        Time::normalize(
+            hours.parse::<u16>().unwrap_or(0_u16),
+            minutes.parse::<u16>().unwrap_or(0_u16),
+            seconds.parse::<u16>().unwrap_or(0_u16)
+        )
     }
 
     fn parse_hhhdddd(time: &String) -> Time {
         let fixed_time = Time::fix_comma(&time);
         let time_f64 = fixed_time.parse::<Decimal>().unwrap();
         return Time::from_decimal(time_f64);
-
-        //Todo: Maybe more readable would be: decimal_string.fix_comma.parse_as_f64.convert_to_time
     }
 
     fn normalize(mut hours: u16, mut minutes: u16, mut seconds: u16) -> Time {
@@ -79,7 +75,7 @@ impl Time {
             minutes: minutes as u8,
             seconds: seconds as u8,
         };
-        //todo: tests for standarize(), e.g. overflowing u16
+        //todo: tests for normalize(), e.g. overflowing u16
     }
 
     fn fix_comma(time: &str) -> std::borrow::Cow<'_, str> {
@@ -98,7 +94,6 @@ impl FromStr for Time {
 
 impl fmt::Display for Time {
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
-        //write!(formatter, "{}:{}:{}", self.hours, self.minutes, self.seconds)
         formatter.write_fmt(format_args!(
             "{}:{:0>2}:{:0>2}",
             self.hours, self.minutes, self.seconds
@@ -284,11 +279,25 @@ mod time_parse_hhhmmss_pattern {
     }
 
     #[test]
-    fn minutes_disallow_more_than_59() {
-        assert_eq!(
-            Time::from_str("0:60:00"),
-            Err(SimpleError::new("Couldn't parse given time."))
-        )
+    fn minutes_normalize_more_than_59() {
+        let given = Time::from_str("0:60:00").unwrap();
+        let expected = Time {
+            hours: 1,
+            minutes: 00,
+            seconds: 00,
+        };
+        assert_eq!(given, expected)
+    }
+
+    #[test]
+    fn minutes_allow_more_than_2_digits() {
+        let given = Time::from_str("0:100:0").unwrap();
+        let expected = Time {
+            hours: 1,
+            minutes: 40,
+            seconds: 0,
+        };
+        assert_eq!(given, expected)
     }
 
     #[test]
@@ -325,6 +334,17 @@ mod time_parse_hhhmmss_pattern {
     }
 
     #[test]
+    fn seconds_allow_more_than_2_digits() {
+        let given = Time::from_str("0:00:3600").unwrap();
+        let expected = Time {
+            hours: 1,
+            minutes: 0,
+            seconds: 0,
+        };
+        assert_eq!(given, expected)
+    }
+
+    #[test]
     fn seconds_allow_up_to_59() {
         let given = Time::from_str("1:23:59").unwrap();
         let expected = Time {
@@ -336,9 +356,24 @@ mod time_parse_hhhmmss_pattern {
     }
 
     #[test]
-    fn seconds_disallow_more_than_59() {
-        let given = Time::from_str("1:23:60");
-        let expected = Err(SimpleError::new("Couldn't parse given time."));
+    fn seconds_normalize_more_than_59() {
+        let given = Time::from_str("0:00:60").unwrap();
+        let expected = Time {
+            hours: 0,
+            minutes: 1,
+            seconds: 0,
+        };
+        assert_eq!(given, expected)
+    }
+
+    #[test]
+    fn normalize_both_minutes_and_seconds() {
+        let given = Time::from_str("0:59:60").unwrap();
+        let expected = Time {
+            hours: 1,
+            minutes: 0,
+            seconds: 0,
+        };
         assert_eq!(given, expected)
     }
 }

@@ -17,7 +17,7 @@ fn main() -> Result<(), ExitFailure> {
     let args = cli::Cli::from_args();
 
     //todo: how to put arguments parsing errors into exitcodes?
-    match use_case_picker(&args.time) {
+    match use_case_selector(&args.time) {
         Ok(time) => {
             println!("{}", time);
             std::process::exit(exitcode::OK);
@@ -33,7 +33,7 @@ fn main() -> Result<(), ExitFailure> {
     }
 }
 
-fn use_case_picker(input: &String) -> Result<String, SimpleError> {
+fn use_case_selector(input: &String) -> Result<String, SimpleError> {
     use regex::Regex;
     let re_hhhmmss = Regex::new(r"^\d*:\d*:?\d*$").unwrap();
     let re_hhhdddd = Regex::new(r"^\d*[,.]?\d*$").unwrap();
